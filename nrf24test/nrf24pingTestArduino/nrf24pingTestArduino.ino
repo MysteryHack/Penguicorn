@@ -1,8 +1,17 @@
 
 /*
-* Getting Started example sketch for nRF24L01+ radios
-* This is a very basic example of how to send data from one node to another
-* Updated: Dec 2014 by TMRh20
+|------------------------------|
+|PIN |  NRF24L01 | Arduino UNO |
+|------------------------------|
+|1   |   GND     |    GND      |
+|2   |   VCC     |   3.3V      |
+|3   |   CE      |   digIO 7   |
+|4   |   CSN     |  digIO 8    |
+|5   |   SCK     |  digIO 13   |
+|6   |   MOSI    |  digIO 11   |
+|7   |   MISO    |  digIO 12   |
+|8   |   IRQ     |    -        |
+|------------------------------|
 */
 
 #include <SPI.h>
