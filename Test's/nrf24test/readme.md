@@ -32,10 +32,10 @@ Make sure when one of the two is in T the other one should be in R mode.
 
 you can check if they are in the right mode by checking the oled and the leds.
 |-----------------------------------|
-|Mode	|	Oled		|	Led		|
+|Mode	|   	Oled		|	  Led	      	|
 |-----------------------------------|
-|	T	|	transmit	|	Blue	|
-|	R	|	Receive		|	Green	|
+|	T	  | 	transmit	|	  Blue      	|
+|	R	  | 	Receive		|	  Green	      |
 |-----------------------------------|
 
 ###Note
