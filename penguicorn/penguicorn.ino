@@ -11,7 +11,6 @@
 #include <Adafruit_NeoPixel.h>
 #include "SH1106.h"
 #include "images.h"
-#include "fonts.h"
 
 using namespace simplebutton;
 
@@ -20,15 +19,33 @@ using namespace simplebutton;
 
 #define USE_WIFI false
 
-int frame, wheelIt, pushTime, ledMode;
-float brightness;
-boolean increment;
-unsigned long t0;
-Button* b;
+int x, y, rndc;
 
-const char* ssid      = "SSID";
-const char* password  = "PASSWORD";
-const char* host_name  = "HOSTNAME";
+int step_x = 1;
+int step_y = 1;
+unsigned long t0, t1;
+float brightness = 0.1;
+
+const char* ssid        = "SSID";
+const char* password    = "PASSWORD";
+const char* host_name   = "HOSTNAME";
+
+/*
+byte colors[] = { 
+  0x00, 0x00, 0xff, //Blue
+  0xff, 0xff, 0x00, //Yellow
+  0xff, 0x00, 0xff, //Magenta 
+  0xff, 0xa5, 0x00, //Orange
+  0x99, 0x32, 0xcc  //Purple
+};
+*/
+byte colors[] = { 
+  0x00, 0x2f, 0xff,
+  0xff, 0x21, 0x8d,
+  0xcb, 0x22, 0xff,
+  0xff, 0xec, 0x00,
+  0xff, 0x88, 0x00
+};
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(2, 0, NEO_GRB + NEO_KHZ800);
 SH1106 display(0x3c, SDA_PIN, SCL_PIN);
@@ -66,162 +83,48 @@ void setup() {
   }
   Serial.flush();
 
-  increment = true;
-  brightness = 0.05;
-  ledMode = 0;
-  frame = 0;
-  wheelIt = 0;
-  b = new ButtonPullup(1);
-  t0 = 0;
+  randomSeed(os_random());
+  rndc = random(0, 4);
+  x = random(10, 100);
+  y = random(10, 50);
+  t0 = millis();
 }
 
 void loop() {
-  if (ledMode == 0) {
-    if (t0 >= 1000) {
-      strip.setPixelColor(0, Wheel((0 + wheelIt) & 255));
-      strip.setPixelColor(1, Wheel((1 + wheelIt) & 255));
-      strip.show();
+  t1 = millis();
 
-      wheelIt++;
-      if (wheelIt == 256)
-        wheelIt = 0;
-      t0 = 0;
-    } else {
-      t0++;
+  if (t1 - t0 > 25) {
+    //collide with top wall
+    if (y + step_y <= 0) {
+        step_y *= -1;
+        rndc = random(0, 4);
     }
-  } else if (ledMode == 1) {
-    if (t0 > 800) {
-      strip.setPixelColor(0, strip.Color(255 * brightness, 0, 0));
-      strip.setPixelColor(1, strip.Color(255 * brightness, 0, 0));
-      strip.show();
-      if (increment) {
-        brightness += 0.01;
-      } else {
-        brightness -= 0.01;
-      }
-
-      if (brightness <= 0.05) {
-        increment = true;
-      }
-      if (brightness >= 0.95) {
-        increment = false;
-      }
-      t0 = 0;
-    } else {
-      t0++;
+    //collided with right wall
+    if (x + 26 + step_x >= 128) {
+        step_x *= -1;
+        rndc = random(0, 4);
     }
-  }
-
-  b->update();
-  if (b->holding()) {
-    display.normalDisplay();
-    display.setTextAlignment(TEXT_ALIGN_CENTER);
-    display.setFont(ArialMT_Plain_10);
-    pushTime = b->getPushTime();
-    if (pushTime >= 1000 && pushTime <= 2000) {
-      display.clear();
-      display.drawString(64, 22, "Rainbow/Evil Mode");
-      display.display();
-    } else if (pushTime >= 2000 && pushTime <= 3000) {
-      display.clear();
-      display.drawString(64, 22, "Smooth/Eye Fucking");
-      display.display();
-    } else if (pushTime > 3000) {
-      display.clear();
-      display.drawString(64, 22, "Sleep ma boi!");
-      display.display();
+    //collide with bottom wall
+    if (y + 11 + step_y >= 64) {
+        step_y *= -1;
+        rndc = random(0, 4);
     }
-
-  }
-
-  if (b->released()) {
-    pushTime = b->getPushTime();
-
-    if (pushTime <= 500) {
-      frame++;
-    } else if (pushTime >= 1000 && pushTime <= 2000) {
-      //Change Led Mode
-      ledMode++;
-      if (ledMode == 0) {
-        brightness = 0.05;
-      } else if (ledMode == 1) {
-        brightness = 0.2;
-      } else if (ledMode >= 2) {
-        ledMode = 0;
-        brightness = 0.05;
-      }
-    } else if (pushTime >= 2000 && pushTime <= 3000) {
-      if (brightness == 1) {
-        brightness = 0.05;
-      } else {
-        brightness = 1;
-      }
-    } else if (pushTime > 3000) {
-      ledMode = -1;
-      frame = 0;
-      brightness = 0;
-      strip.setPixelColor(0, strip.Color(0, 0, 0));
-      strip.setPixelColor(1, strip.Color(0, 0, 0));
-      strip.show();
+    //collide with left wall
+    if (x + step_x <= 0) {
+        step_x *= -1;
+        rndc = random(0, 4);
     }
+    
+    x += step_x;
+    y += step_y;
 
-    if (frame > 5)
-      frame = 1;
-    loadFrame(frame);
+    strip.setPixelColor(0, strip.Color(colors[rndc * 3] * brightness, colors[rndc * 3 + 1] * brightness, colors[rndc * 3 + 2] * brightness));
+    strip.setPixelColor(1, strip.Color(colors[rndc * 3] * brightness, colors[rndc * 3 + 1] * brightness, colors[rndc * 3 + 2] * brightness));
+    strip.show();
+  
+    display.clear();
+    display.drawXbm(x, y, 32, 11, dvd);
+    display.display();
+    t0 = t1;
   }
-}
-
-void loadFrame(int id) {
-  display.normalDisplay();
-  display.clear();
-  switch (id) {
-    case 0:
-      display.display();
-      break;
-    case 1:
-      //display.drawXbm(0, 0, 112, 57, chaos);
-      display.setTextAlignment(TEXT_ALIGN_CENTER);
-      display.setFont(Roboto_Condensed_48);
-      display.drawString(64, 0, "#35C3");
-      display.setFont(ArialMT_Plain_10);
-      display.drawString(64, 52, "InnSecure Assembly");
-      display.display();
-      break;
-    case 2:
-      display.drawXbm(28, 0, 64, 59, heart);
-      display.display();
-      break;
-    case 3:
-      display.drawXbm(32, 0, 64, 63, dickbutt);
-      display.display();
-      break;
-    case 4:
-      display.setTextAlignment(TEXT_ALIGN_CENTER);
-      display.setFont(ArialMT_Plain_16);
-      display.drawString(64, 12, "@thepenguicorn");
-      display.setFont(ArialMT_Plain_10);
-      display.drawString(64, 34, "InnSecure Assembly");
-      display.display();
-      break;
-    case 5:
-      display.invertDisplay();
-      display.drawXbm(42, 4, 48, 42, twitterqr);
-      display.setFont(ArialMT_Plain_10);
-      display.drawString(64, 50, "@thepenguicorn");
-      display.display();
-      break;
-  }
-}
-
-uint32_t Wheel(byte WheelPos) {
-  WheelPos = 255 - WheelPos;
-  if (WheelPos < 85) {
-    return strip.Color((255 - WheelPos * 3) * brightness, 0, (WheelPos * 3) * brightness);
-  }
-  if (WheelPos < 170) {
-    WheelPos -= 85;
-    return strip.Color(0, (WheelPos * 3) * brightness, (255 - WheelPos * 3) * brightness);
-  }
-  WheelPos -= 170;
-  return strip.Color((WheelPos * 3) * brightness, (255 - WheelPos * 3) * brightness, 0);
 }
