@@ -1,4 +1,4 @@
-# Penguicorn Library
-Helper library to make easier Penguicorn development.
+# Penguicorn Arduino Library
+Helper library to make Penguicorn development easier.
 
 Libraries used:
